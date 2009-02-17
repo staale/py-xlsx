@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__author__="Ståle Undheim <staale.undheim@webstep.no>"
+__author__="Ståle Undheim <staale@staale.org>"
 
 import re
 import zipfile
