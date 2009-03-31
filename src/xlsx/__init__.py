@@ -80,6 +80,7 @@ class Sheet(object):
                 colType = columnNode.getAttribute("t")
                 cellId = columnNode.getAttribute("r")
                 colNum = cellId[:len(cellId)-len(rowNum)]
+                formula = None
                 if colType == "s":
                     stringIndex = columnNode.firstChild.firstChild.nodeValue
                     data = self.workbook.sharedStrings[int(stringIndex)]
@@ -87,11 +88,13 @@ class Sheet(object):
                     data = columnNode.getElementsByTagName("v")[0].firstChild.nodeValue
                 else:
                     data = ""
+                if columnNode.getElementsByTagName("f"):
+                    formula = columnNode.getElementsByTagName("f")[0].firstChild.nodeValue
                 if not rowNum in rows:
                     rows[rowNum] = []
                 if not colNum in columns:
                     columns[colNum] = []
-                cell = Cell(rowNum, colNum, data)
+                cell = Cell(rowNum, colNum, data,formula=formula)
                 rows[rowNum].append(cell)
                 columns[colNum].append(cell)
                 self.cells[cellId] = cell
@@ -113,10 +116,11 @@ class Sheet(object):
             return self.rows[key]
 
 class Cell(object):
-    def __init__(self, row, column, value):
+    def __init__(self, row, column, value, formula=None):
         self.row = int(row)
         self.column = column
         self.value = value
+	self.formula = formula
         self.id = "%s%s"%(column, row)
 
     def __cmp__(self, other):
@@ -131,4 +135,4 @@ class Cell(object):
                 return 0
 
     def __str__(self):
-        return "<Cell [%s] : \"%s\">"%(self.id, self.value)
+        return "<Cell [%s] : \"%s\" (%s)>"%(self.id, self.value, self.formula)
