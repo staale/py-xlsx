@@ -101,6 +101,7 @@ class Sheet(object):
         for rowNum in rows.keys():
             self.rows[rowNum] = sorted(rows[rowNum])
         self.cols = columns
+        self.loaded=True
 
     def __getitem__(self, key):
         if not self.loaded:
