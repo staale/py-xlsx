@@ -115,6 +115,11 @@ class Sheet(object):
         if row:
             return self.rows[key]
 
+    def __iter__(self):
+        if not self.loaded:
+            self.__load()
+        return self.cells.__iter__()
+
 class Cell(object):
     def __init__(self, row, column, value, formula=None):
         self.row = int(row)
