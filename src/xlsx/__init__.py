@@ -53,8 +53,8 @@ class SharedStrings(list):
     def __init__(self, workbook):
         sharedStringsDom = workbook.domzip["xl/sharedStrings.xml"]
         nodes = sharedStringsDom.firstChild.childNodes
-        for text in [n.firstChild.firstChild.nodeValue for n in nodes]:
-            self.append(text)
+        for text in [n.firstChild.firstChild for n in nodes]:
+            self.append(text.nodeValue if text != None else "")
 
 class Sheet(object):
 
@@ -85,11 +85,11 @@ class Sheet(object):
                     stringIndex = columnNode.firstChild.firstChild.nodeValue
                     data = self.workbook.sharedStrings[int(stringIndex)]
                 elif columnNode.firstChild:
-                    data = columnNode.getElementsByTagName("v")[0].firstChild.nodeValue
+                    data = getattr(columnNode.getElementsByTagName("v")[0].firstChild, "nodeValue", None)
                 else:
                     data = ""
                 if columnNode.getElementsByTagName("f"):
-                    formula = columnNode.getElementsByTagName("f")[0].firstChild.nodeValue
+                    formula = getattr(columnNode.getElementsByTagName("f")[0].firstChild, "nodeValue", None)
                 if not rowNum in rows:
                     rows[rowNum] = []
                 if not colNum in columns:
