@@ -13,9 +13,9 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
     ],
-    author='Chris Adams',
-    author_email='chris@improbable.org',
-    url='http://github.com/acdha/python-xlsx',
+    author='Staale Undheim',
+    author_email='github@staale.org',
+    url='http://github.com/staale/python-xlsx',
     packages=[
         "xlsx"
     ],
