@@ -19,13 +19,12 @@ class DomZip(object):
 
 class Workbook(object):
 
-    sheetsByName = {}
-    sheetsByIndex = []
-
     def __init__(self, filename):
+        self.__sheetsByIndex = []
+        self.__sheetsByName = {}
         self.filename = filename
         self.domzip = DomZip(filename)
-        self.sharedStrings = SharedStrings(self)
+        self.sharedStrings = SharedStrings(self.domzip["xl/sharedStrings.xml"])
         workbookDoc = self.domzip["xl/workbook.xml"]
         sheets = workbookDoc.firstChild.getElementsByTagName("sheets")[0]
         for sheetNode in sheets.childNodes:
@@ -33,25 +32,24 @@ class Workbook(object):
             id = int(sheetNode._attrs["r:id"].value[3:])
 
             sheet = Sheet(self, id, name)
-            self.sheetsByIndex.append(sheet)
-            self.sheetsByName[name] = sheet
-            assert sheet.name in self.sheetsByName
+            self.__sheetsByIndex.append(sheet)
+            self.__sheetsByName[name] = sheet
+            assert sheet.name in self.__sheetsByName
 
     def keys(self):
-        return self.sheetsByName.keys()
+        return self.__sheetsByName.keys()
 
     def __len__(self):
-        return len(self.sheetsByName)
+        return len(self.__sheetsByName)
 
     def __getitem__(self, key):
         if isinstance(key, int):
-            return self.sheetsByIndex[key]
+            return self.__sheetsByIndex[key]
         else:
-            return self.sheetsByName[key]
+            return self.__sheetsByName[key]
 
 class SharedStrings(list):
-    def __init__(self, workbook):
-        sharedStringsDom = workbook.domzip["xl/sharedStrings.xml"]
+    def __init__(self, sharedStringsDom):
         nodes = sharedStringsDom.firstChild.childNodes
         for text in [n.firstChild.firstChild for n in nodes]:
             self.append(text.nodeValue if text != None else "")
@@ -64,9 +62,9 @@ class Sheet(object):
         self.name = name
         self.loaded = False
         self.addrPattern = re.compile("([a-zA-Z]*)(\d*)")
-        self.cells = {}
-        self.cols = {}
-        self.rows = {}
+        self.__cells = {}
+        self.__cols = {}
+        self.__rows = {}
 
     def __load(self):
         sheetDoc = self.workbook.domzip["xl/worksheets/sheet%d.xml"%self.id]
@@ -97,29 +95,39 @@ class Sheet(object):
                 cell = Cell(rowNum, colNum, data,formula=formula)
                 rows[rowNum].append(cell)
                 columns[colNum].append(cell)
-                self.cells[cellId] = cell
+                self.__cells[cellId] = cell
         for rowNum in rows.keys():
-            self.rows[rowNum] = sorted(rows[rowNum])
-        self.cols = columns
+            self.__rows[rowNum] = sorted(rows[rowNum])
+        self.__cols = columns
         self.loaded=True
+
+    def rows(self):
+        if not self.loaded:
+            self.__load()
+        return self.__rows
+    
+    def cols(self):
+        if not self.loaded:
+            self.load()
+        return self.__cols
 
     def __getitem__(self, key):
         if not self.loaded:
             self.__load()
         (column, row) = self.addrPattern.match(key).groups()
         if column and row:
-            if not key in self.cells:
+            if not key in self.__cells:
                 return None
-            return self.cells[key]
+            return self.__cells[key]
         if column:
-            return self.cols[key]
+            return self.__cols[key]
         if row:
-            return self.rows[key]
+            return self.__rows[key]
 
     def __iter__(self):
         if not self.loaded:
             self.__load()
-        return self.cells.__iter__()
+        return self.__cells.__iter__()
 
 class Cell(object):
     def __init__(self, row, column, value, formula=None):
