@@ -52,7 +52,14 @@ class SharedStrings(list):
     def __init__(self, sharedStringsDom):
         nodes = sharedStringsDom.firstChild.childNodes
         for text in [n.firstChild.firstChild for n in nodes]:
-            self.append(text.nodeValue if text != None else "")
+            self.append(text.nodeValue if text and text.nodeValue else self.__getIfInline(text))
+            
+    def __getIfInline(self, text):
+        if text.hasChildNodes():
+            nodes = text.parentNode.parentNode.childNodes
+            return "".join([node.getElementsByTagName("t")[0].firstChild.nodeValue for node in nodes])
+        else:
+            return ""
 
 class Sheet(object):
 
@@ -134,7 +141,7 @@ class Cell(object):
         self.row = int(row)
         self.column = column
         self.value = value
-	self.formula = formula
+        self.formula = formula
         self.id = "%s%s"%(column, row)
 
     def __cmp__(self, other):
