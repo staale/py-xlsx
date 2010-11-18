@@ -20,7 +20,7 @@ class DomZip(object):
 class Workbook(object):
 
     def __init__(self, filename):
-        self.__sheetsByIndex = []
+        self.__sheetsById = {}
         self.__sheetsByName = {}
         self.filename = filename
         self.domzip = DomZip(filename)
@@ -32,7 +32,7 @@ class Workbook(object):
             id = int(sheetNode._attrs["r:id"].value[3:])
 
             sheet = Sheet(self, id, name)
-            self.__sheetsByIndex.append(sheet)
+            self.__sheetsById[id] = sheet
             self.__sheetsByName[name] = sheet
             assert sheet.name in self.__sheetsByName
 
@@ -42,9 +42,13 @@ class Workbook(object):
     def __len__(self):
         return len(self.__sheetsByName)
 
+    def __iter__(self):
+        for sheet in self.__sheetsByName.values():
+            yield sheet
+
     def __getitem__(self, key):
         if isinstance(key, int):
-            return self.__sheetsByIndex[key]
+            return self.__sheetsById[key]
         else:
             return self.__sheetsByName[key]
 
@@ -53,7 +57,7 @@ class SharedStrings(list):
         nodes = sharedStringsDom.firstChild.childNodes
         for text in [n.firstChild.firstChild for n in nodes]:
             self.append(text.nodeValue if text and text.nodeValue else self.__getIfInline(text))
-            
+
     def __getIfInline(self, text):
         if text.hasChildNodes():
             nodes = text.parentNode.parentNode.childNodes
@@ -112,7 +116,7 @@ class Sheet(object):
         if not self.loaded:
             self.__load()
         return self.__rows
-    
+
     def cols(self):
         if not self.loaded:
             self.load()
