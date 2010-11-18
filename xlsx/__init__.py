@@ -29,7 +29,7 @@ class Workbook(object):
         sheets = workbookDoc.firstChild.getElementsByTagName("sheets")[0]
         for sheetNode in sheets.childNodes:
             name = sheetNode._attrs["name"].value
-            id = int(sheetNode._attrs["r:id"].value[3:])
+            id = int(sheetNode._attrs["sheetId"].value)
 
             sheet = Sheet(self, id, name)
             self.__sheetsById[id] = sheet
