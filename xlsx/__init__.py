@@ -119,7 +119,7 @@ class Sheet(object):
 
     def cols(self):
         if not self.loaded:
-            self.load()
+            self.__load()
         return self.__cols
 
     def __getitem__(self, key):
