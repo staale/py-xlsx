@@ -3,6 +3,7 @@ __author__="Ståle Undheim <staale@staale.org>"
 
 import re
 import zipfile
+from xldate import xldate_as_tuple
 
 from xml.dom import minidom
 
@@ -88,11 +89,14 @@ class Sheet(object):
             for columnNode in rowNode.childNodes:
                 colType = columnNode.getAttribute("t")
                 cellId = columnNode.getAttribute("r")
+                cellS = columnNode.getAttribute("s")
                 colNum = cellId[:len(cellId)-len(rowNum)]
                 formula = None
                 if colType == "s":
                     stringIndex = columnNode.firstChild.firstChild.nodeValue
                     data = self.workbook.sharedStrings[int(stringIndex)]
+                elif cellS == '1' and colType == "n": #Date field
+                    data = xldate_as_tuple(int(columnNode.firstChild.firstChild.nodeValue), datemode=0)
                 elif columnNode.firstChild:
                     data = getattr(columnNode.getElementsByTagName("v")[0].firstChild, "nodeValue", None)
                 else:
@@ -103,12 +107,11 @@ class Sheet(object):
                     rows[rowNum] = []
                 if not colNum in columns:
                     columns[colNum] = []
-                cell = Cell(rowNum, colNum, data,formula=formula)
+                cell = Cell(rowNum, colNum, data, formula=formula)
                 rows[rowNum].append(cell)
                 columns[colNum].append(cell)
                 self.__cells[cellId] = cell
-        for rowNum in rows.keys():
-            self.__rows[rowNum] = sorted(rows[rowNum])
+        self.__rows = rows
         self.__cols = columns
         self.loaded=True
 
