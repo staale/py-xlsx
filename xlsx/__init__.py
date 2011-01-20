@@ -8,15 +8,16 @@ from xldate import xldate_as_tuple
 from xml.dom import minidom
 
 class DomZip(object):
+
     def __init__(self, filename):
-        self.filename = filename
+        self.ziphandle = zipfile.ZipFile(filename, 'r')
 
     def __getitem__(self, key):
         # @type ziphandle ZipFile
-        ziphandle = zipfile.ZipFile(self.filename)
-        dom = minidom.parseString(ziphandle.read(key))
-        ziphandle.close()
-        return dom
+        return minidom.parseString(self.ziphandle.read(key))
+
+    def __del__(self):
+        self.ziphandle.close()
 
 class Workbook(object):
 
@@ -54,6 +55,7 @@ class Workbook(object):
             return self.__sheetsByName[key]
 
 class SharedStrings(list):
+
     def __init__(self, sharedStringsDom):
         nodes = sharedStringsDom.firstChild.childNodes
         for text in [n.firstChild.firstChild for n in nodes]:
@@ -85,17 +87,17 @@ class Sheet(object):
         rows = {}
         columns = {}
         for rowNode in sheetData.childNodes:
-            rowNum = rowNode.getAttribute("r")
+            rowNum = int(rowNode.getAttribute("r"))
             for columnNode in rowNode.childNodes:
                 colType = columnNode.getAttribute("t")
                 cellId = columnNode.getAttribute("r")
                 cellS = columnNode.getAttribute("s")
-                colNum = cellId[:len(cellId)-len(rowNum)]
+                colNum = cellId[:len(cellId)-len(str(rowNum))]
                 formula = None
                 if colType == "s":
                     stringIndex = columnNode.firstChild.firstChild.nodeValue
                     data = self.workbook.sharedStrings[int(stringIndex)]
-                elif cellS == '1' and colType == "n": #Date field
+                elif cellS in ('1', '2', '3', '4') and colType == "n": #Date field
                     data = xldate_as_tuple(int(columnNode.firstChild.firstChild.nodeValue), datemode=0)
                 elif columnNode.firstChild:
                     data = getattr(columnNode.getElementsByTagName("v")[0].firstChild, "nodeValue", None)
