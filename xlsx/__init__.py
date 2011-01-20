@@ -29,14 +29,14 @@ class Workbook(object):
         self.sharedStrings = SharedStrings(self.domzip["xl/sharedStrings.xml"])
         workbookDoc = self.domzip["xl/workbook.xml"]
         sheets = workbookDoc.firstChild.getElementsByTagName("sheets")[0]
+        id = 1
         for sheetNode in sheets.childNodes:
             name = sheetNode._attrs["name"].value
-            id = int(sheetNode._attrs["sheetId"].value)
-
             sheet = Sheet(self, id, name)
             self.__sheetsById[id] = sheet
             self.__sheetsByName[name] = sheet
             assert sheet.name in self.__sheetsByName
+            id += 1
 
     def keys(self):
         return self.__sheetsByName.keys()
@@ -62,7 +62,7 @@ class SharedStrings(list):
             self.append(text.nodeValue if text and text.nodeValue else self.__getIfInline(text))
 
     def __getIfInline(self, text):
-        if text.hasChildNodes():
+        if text is not None and text.hasChildNodes():
             nodes = text.parentNode.parentNode.childNodes
             return "".join([node.getElementsByTagName("t")[0].firstChild.nodeValue for node in nodes])
         else:
