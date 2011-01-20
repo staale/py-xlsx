@@ -24,7 +24,11 @@ class Workbook(object):
         self.__sheetsByName = {}
         self.filename = filename
         self.domzip = DomZip(filename)
-        self.sharedStrings = SharedStrings(self.domzip["xl/sharedStrings.xml"])
+        try : # Not all xlsx documents contain Shared Strings
+            self.sharedStrings = SharedStrings(self.domzip["xl/sharedStrings.xml"])
+        except KeyError :
+            self.sharedStrings = None
+            
         workbookDoc = self.domzip["xl/workbook.xml"]
         sheets = workbookDoc.firstChild.getElementsByTagName("sheets")[0]
         for sheetNode in sheets.childNodes:
@@ -90,13 +94,14 @@ class Sheet(object):
                 cellId = columnNode.getAttribute("r")
                 colNum = cellId[:len(cellId)-len(rowNum)]
                 formula = None
+                data = ""
                 if colType == "s":
                     stringIndex = columnNode.firstChild.firstChild.nodeValue
-                    data = self.workbook.sharedStrings[int(stringIndex)]
+                    if self.workbook.sharedStrings :
+                        data = self.workbook.sharedStrings[int(stringIndex)]
                 elif columnNode.firstChild:
                     data = getattr(columnNode.getElementsByTagName("v")[0].firstChild, "nodeValue", None)
-                else:
-                    data = ""
+                    
                 if columnNode.getElementsByTagName("f"):
                     formula = getattr(columnNode.getElementsByTagName("f")[0].firstChild, "nodeValue", None)
                 if not rowNum in rows:
