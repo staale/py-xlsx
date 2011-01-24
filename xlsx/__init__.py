@@ -1,44 +1,70 @@
 # -*- coding: utf-8 -*-
+""" Small footprint xlsx reader """
 __author__="Ståle Undheim <staale@staale.org>"
 
 import re
 import zipfile
+from xldate import xldate_as_tuple
 
 from xml.dom import minidom
 
 class DomZip(object):
+    """ Excel xlsx files are zip files containing xml documents.
+    This class handles parsing those xml documents into dom objects
+
+    """
+
     def __init__(self, filename):
-        self.filename = filename
+        """ Open up the xlsx document.
+        Arguments::
+
+            filename -- can be a filepath or a file-like object
+
+        """
+
+        self.ziphandle = zipfile.ZipFile(filename, 'r')
 
     def __getitem__(self, key):
-        # @type ziphandle ZipFile
-        ziphandle = zipfile.ZipFile(self.filename)
-        dom = minidom.parseString(ziphandle.read(key))
-        ziphandle.close()
-        return dom
+        """ Get a domtree from a document in the zip file
+        Arguments::
+
+            key -- path inside the zip file (xml document)
+
+        """
+
+        return minidom.parseString(self.ziphandle.read(key))
+
+    def __del__(self):
+        """Close the zip file when finished"""
+
+        self.ziphandle.close()
 
 class Workbook(object):
+    """Main class that contains sheets organized by name or by id.
+    Id being the order number of the sheet starting from 1
 
+    """
     def __init__(self, filename):
         self.__sheetsById = {}
         self.__sheetsByName = {}
         self.filename = filename
         self.domzip = DomZip(filename)
         try : # Not all xlsx documents contain Shared Strings
-            self.sharedStrings = SharedStrings(self.domzip["xl/sharedStrings.xml"])
+            self.sharedStrings = SharedStrings(
+                self.domzip["xl/sharedStrings.xml"])
         except KeyError :
             self.sharedStrings = None
-            
+
         workbookDoc = self.domzip["xl/workbook.xml"]
         sheets = workbookDoc.firstChild.getElementsByTagName("sheets")[0]
+        id = 1
         for sheetNode in sheets.childNodes:
             name = sheetNode._attrs["name"].value
-            id = int(sheetNode._attrs["sheetId"].value)
-
             sheet = Sheet(self, id, name)
             self.__sheetsById[id] = sheet
             self.__sheetsByName[name] = sheet
             assert sheet.name in self.__sheetsByName
+            id += 1
 
     def keys(self):
         return self.__sheetsByName.keys()
@@ -57,15 +83,19 @@ class Workbook(object):
             return self.__sheetsByName[key]
 
 class SharedStrings(list):
+
     def __init__(self, sharedStringsDom):
         nodes = sharedStringsDom.firstChild.childNodes
         for text in [n.firstChild.firstChild for n in nodes]:
-            self.append(text.nodeValue if text and text.nodeValue else self.__getIfInline(text))
+            self.append(text.nodeValue if text and text.nodeValue else
+                                                    self.__getIfInline(text))
 
     def __getIfInline(self, text):
-        if text.hasChildNodes():
+        if text is not None and text.hasChildNodes():
             nodes = text.parentNode.parentNode.childNodes
-            return "".join([node.getElementsByTagName("t")[0].firstChild.nodeValue for node in nodes])
+            return "".join([
+                node.getElementsByTagName("t")[0].firstChild.nodeValue
+                for node in nodes])
         else:
             return ""
 
@@ -82,38 +112,46 @@ class Sheet(object):
         self.__rows = {}
 
     def __load(self):
-        sheetDoc = self.workbook.domzip["xl/worksheets/sheet%d.xml"%self.id]
+        sheetDoc = self.workbook.domzip["xl/worksheets/sheet%d.xml" % self.id]
         sheetData = sheetDoc.firstChild.getElementsByTagName("sheetData")[0]
         # @type sheetData Element
         rows = {}
         columns = {}
         for rowNode in sheetData.childNodes:
-            rowNum = rowNode.getAttribute("r")
+            rowNum = int(rowNode.getAttribute("r"))
             for columnNode in rowNode.childNodes:
                 colType = columnNode.getAttribute("t")
                 cellId = columnNode.getAttribute("r")
-                colNum = cellId[:len(cellId)-len(rowNum)]
+                cellS = columnNode.getAttribute("s")
+                colNum = cellId[:len(cellId)-len(str(rowNum))]
                 formula = None
-                data = ""
+                data = ''
                 if colType == "s":
                     stringIndex = columnNode.firstChild.firstChild.nodeValue
-                    if self.workbook.sharedStrings :
-                        data = self.workbook.sharedStrings[int(stringIndex)]
+                    data = self.workbook.sharedStrings[int(stringIndex)]
+                #Date field
+                elif cellS in ('1', '2', '3', '4') and colType == "n":
+                    data = xldate_as_tuple(
+                        int(columnNode.firstChild.firstChild.nodeValue),
+                        datemode=0)
                 elif columnNode.firstChild:
-                    data = getattr(columnNode.getElementsByTagName("v")[0].firstChild, "nodeValue", None)
-                    
+                    data = getattr(
+                        columnNode.getElementsByTagName("v")[0].firstChild,
+                        "nodeValue", None)
+
                 if columnNode.getElementsByTagName("f"):
-                    formula = getattr(columnNode.getElementsByTagName("f")[0].firstChild, "nodeValue", None)
+                    formula = getattr(
+                        columnNode.getElementsByTagName("f")[0].firstChild,
+                        "nodeValue", None)
                 if not rowNum in rows:
                     rows[rowNum] = []
                 if not colNum in columns:
                     columns[colNum] = []
-                cell = Cell(rowNum, colNum, data,formula=formula)
+                cell = Cell(rowNum, colNum, data, formula=formula)
                 rows[rowNum].append(cell)
                 columns[colNum].append(cell)
                 self.__cells[cellId] = cell
-        for rowNum in rows.keys():
-            self.__rows[rowNum] = sorted(rows[rowNum])
+        self.__rows = rows
         self.__cols = columns
         self.loaded=True
 
@@ -164,23 +202,24 @@ class Cell(object):
             else:
                 return 0
 
-    def __str__(self):
-        return "<Cell [%s] : \"%s\" (%s)>"%(self.id, self.value, self.formula)
-                       
     def __lt__(self, other):
         return self.__cmp__(other) == -1
-        
+
     def __gt__(self, other):
         return self.__cmp__(other) == 1
-        
+
     def __eq__(self, other):
         return self.__cmp__(other) == 0
-        
+
     def __ne__(self, other):
         return self.__cmp__(other) != 0
-        
+
     def __le__(self, other):
         return self.__cmp__(other) != 1
-        
+
     def __ge__(self, other):
         return self.__cmp__(other) != -1
+
+    def __unicode__(self):
+        return u"<Cell [%s] : \"%s\" (%s)>" % (self.id, self.value,
+                                               self.formula, )
