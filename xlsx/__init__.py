@@ -68,6 +68,9 @@ class Workbook(object):
 
     def keys(self):
         return self.__sheetsByName.keys()
+        
+    def close(self):
+        self.domzip.__del__()
 
     def __len__(self):
         return len(self.__sheetsByName)
