@@ -90,8 +90,10 @@ class SharedStrings(list):
     def __init__(self, sharedStringsDom):
         nodes = sharedStringsDom.firstChild.childNodes
         for text in [n.firstChild.firstChild for n in nodes]:
-            self.append(text.nodeValue if text and text.nodeValue else
-                                                    self.__getIfInline(text))
+            if text and text.nodeValue:
+                self.append(text.nodeValue)
+            else:
+                self.append(self.__getIfInline(text))
 
     def __getIfInline(self, text):
         if text is not None and text.hasChildNodes():
