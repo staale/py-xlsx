@@ -131,23 +131,26 @@ class Sheet(object):
                 colNum = cellId[:len(cellId)-len(str(rowNum))]
                 formula = None
                 data = ''
-                if colType == "s":
-                    stringIndex = columnNode.firstChild.firstChild.nodeValue
-                    data = self.workbook.sharedStrings[int(stringIndex)]
-                #Date field
-                elif cellS in ('1', '2', '3', '4') and colType == "n":
-                    data = xldate_as_tuple(
-                        int(columnNode.firstChild.firstChild.nodeValue),
-                        datemode=0)
-                elif columnNode.firstChild:
-                    data = getattr(
-                        columnNode.getElementsByTagName("v")[0].firstChild,
-                        "nodeValue", None)
+                try:
+                    if colType == "s":
+                        stringIndex = columnNode.firstChild.firstChild.nodeValue
+                        data = self.workbook.sharedStrings[int(stringIndex)]
+                    #Date field
+                    elif cellS in ('1', '2', '3', '4') and colType == "n":
+                        data = xldate_as_tuple(
+                            int(columnNode.firstChild.firstChild.nodeValue),
+                            datemode=0)
+                    elif columnNode.firstChild:
+                        data = getattr(
+                            columnNode.getElementsByTagName("v")[0].firstChild,
+                            "nodeValue", None)
 
-                if columnNode.getElementsByTagName("f"):
-                    formula = getattr(
-                        columnNode.getElementsByTagName("f")[0].firstChild,
-                        "nodeValue", None)
+                    if columnNode.getElementsByTagName("f"):
+                        formula = getattr(
+                            columnNode.getElementsByTagName("f")[0].firstChild,
+                            "nodeValue", None)
+                except Exception:
+                    pass
                 if not rowNum in rows:
                     rows[rowNum] = []
                 if not colNum in columns:
