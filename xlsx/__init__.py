@@ -55,6 +55,11 @@ class Workbook(object):
         except KeyError :
             self.sharedStrings = None
 
+        # Extract the last modification date; based upon an answer at:
+        #  http://superuser.com/questions/195548/excel-2007-modify-creation-date-statistics
+        docPropsCoreDoc = self.domzip["docProps/core.xml"]
+        self.dcterms_modified = docPropsCoreDoc.firstChild.getElementsByTagName("dcterms:modified")[0].childNodes[0].data
+        
         workbookDoc = self.domzip["xl/workbook.xml"]
         sheets = workbookDoc.firstChild.getElementsByTagName("sheets")[0]
         id = 1
