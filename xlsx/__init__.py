@@ -57,9 +57,11 @@ class Workbook(object):
 
         # Extract the last modification date; based upon an answer at:
         #  http://superuser.com/questions/195548/excel-2007-modify-creation-date-statistics
-        docPropsCoreDoc = self.domzip["docProps/core.xml"]
-        self.dcterms_modified = docPropsCoreDoc.firstChild.getElementsByTagName("dcterms:modified")[0].childNodes[0].data
-        
+        self.dcterms_modified = None
+        modified_date_elements = self.domzip["docProps/core.xml"].getElementsByTagName("dcterms:modified")
+        if modified_date_elements:
+            self.dcterms_modified = modified_date_elements[0].childNodes[0].data
+
         workbookDoc = self.domzip["xl/workbook.xml"]
         sheets = workbookDoc.firstChild.getElementsByTagName("sheets")[0]
         id = 1
@@ -73,7 +75,7 @@ class Workbook(object):
 
     def keys(self):
         return self.__sheetsByName.keys()
-        
+
     def close(self):
         self.domzip.__del__()
 
