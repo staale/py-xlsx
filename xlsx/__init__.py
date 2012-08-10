@@ -6,7 +6,7 @@ import re
 import zipfile
 from xldate import xldate_as_tuple
 
-from xml.dom import minidom
+from xml.etree import cElementTree as ET
 
 class DomZip(object):
     """ Excel xlsx files are zip files containing xml documents.
@@ -32,7 +32,7 @@ class DomZip(object):
 
         """
 
-        return minidom.parseString(self.ziphandle.read(key))
+        return ET.fromstring(self.ziphandle.read(key))
 
     def __del__(self):
         """Close the zip file when finished"""
@@ -58,15 +58,15 @@ class Workbook(object):
         # Extract the last modification date; based upon an answer at:
         #  http://superuser.com/questions/195548/excel-2007-modify-creation-date-statistics
         self.dcterms_modified = None
-        modified_date_elements = self.domzip["docProps/core.xml"].getElementsByTagName("dcterms:modified")
+        modified_date_elements = self.domzip["docProps/core.xml"].findtext("{http://purl.org/dc/terms/}modified")
         if modified_date_elements:
-            self.dcterms_modified = modified_date_elements[0].childNodes[0].data
+            self.dcterms_modified = modified_date_elements
 
         workbookDoc = self.domzip["xl/workbook.xml"]
-        sheets = workbookDoc.firstChild.getElementsByTagName("sheets")[0]
+        sheets = workbookDoc.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheets")
         id = 1
-        for sheetNode in sheets.childNodes:
-            name = sheetNode._attrs["name"].value
+        for sheetNode in sheets:
+            name = sheetNode.get("name")
             sheet = Sheet(self, id, name)
             self.__sheetsById[id] = sheet
             self.__sheetsByName[name] = sheet
@@ -95,21 +95,9 @@ class Workbook(object):
 class SharedStrings(list):
 
     def __init__(self, sharedStringsDom):
-        nodes = sharedStringsDom.firstChild.childNodes
-        for text in [n.firstChild.firstChild for n in nodes]:
-            if text and text.nodeValue:
-                self.append(text.nodeValue)
-            else:
-                self.append(self.__getIfInline(text))
-
-    def __getIfInline(self, text):
-        if text is not None and text.hasChildNodes():
-            nodes = text.parentNode.parentNode.childNodes
-            return "".join([
-                node.getElementsByTagName("t")[0].firstChild.nodeValue
-                for node in nodes])
-        else:
-            return ""
+        nodes = [x for x in sharedStringsDom]
+        for text in [n[0] for n in nodes]:
+            self.append(text.text)
 
 class Sheet(object):
 
@@ -125,39 +113,35 @@ class Sheet(object):
 
     def __load(self):
         sheetDoc = self.workbook.domzip["xl/worksheets/sheet%d.xml" % self.id]
-        sheetData = sheetDoc.firstChild.getElementsByTagName("sheetData")[0]
+        sheetData = sheetDoc.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheetData")
         # @type sheetData Element
         rows = {}
         columns = {}
-        for rowNode in sheetData.childNodes:
-            rowNum = int(rowNode.getAttribute("r"))
-            for columnNode in rowNode.childNodes:
-                colType = columnNode.getAttribute("t")
-                cellId = columnNode.getAttribute("r")
-                cellS = columnNode.getAttribute("s")
+        for rowNode in sheetData:
+            rowNum = int(rowNode.get("r"))
+            for columnNode in rowNode:
+                colType = columnNode.get("t")
+                cellId = columnNode.get("r")
+                cellS = columnNode.get("s")
                 colNum = cellId[:len(cellId)-len(str(rowNum))]
                 formula = None
                 data = ''
                 try:
                     if colType == "s":
-                        stringIndex = columnNode.firstChild.firstChild.nodeValue
+                        stringIndex = columnNode[0].text
                         data = self.workbook.sharedStrings[int(stringIndex)]
                     #Date field
                     elif cellS in ('1', '2', '3', '4') and colType == "n":
                         data = xldate_as_tuple(
-                            int(columnNode.firstChild.firstChild.nodeValue),
+                            int(columnNode[0].text),
                             datemode=0)
-                    elif columnNode.firstChild:
-                        data = getattr(
-                            columnNode.getElementsByTagName("v")[0].firstChild,
-                            "nodeValue", None)
+                    elif len(columnNode)>0 and columnNode[0] is not None:
+                        data = columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v").text
 
-                    if columnNode.getElementsByTagName("f"):
-                        formula = getattr(
-                            columnNode.getElementsByTagName("f")[0].firstChild,
-                            "nodeValue", None)
+                    if columnNode.find("f"):
+                        formula = columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}f").text
                 except Exception:
-                    pass
+                    raise #pass
                 if not rowNum in rows:
                     rows[rowNum] = []
                 if not colNum in columns:
