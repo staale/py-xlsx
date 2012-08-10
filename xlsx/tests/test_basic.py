@@ -64,7 +64,7 @@ class WorkbookTestCase(unittest.TestCase):
                          u'エム セシビ め「こを バジョン')
 
     def test_dcterms_modified(self):
-        self.assertIs(self.workbooks['test1.xlsx'].dcterms_modified, None)
+        self.assertTrue(self.workbooks['test1.xlsx'].dcterms_modified is None)
         self.assertEqual(self.workbooks['modified_date.xlsx'].dcterms_modified,
                          u'2012-07-01T05:04:12Z')
 

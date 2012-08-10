@@ -6,7 +6,10 @@ import re
 import zipfile
 from xldate import xldate_as_tuple
 
-from xml.etree import cElementTree as ET
+try:
+    from xml.etree import cElementTree as ET
+except:
+    import cElementTree as ET
 
 class DomZip(object):
     """ Excel xlsx files are zip files containing xml documents.
