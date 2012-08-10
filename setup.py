@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     version="0.2",
@@ -20,4 +20,5 @@ setup(
     packages=[
         "xlsx"
     ],
+    test_suite = 'xlsx.tests'
 )
