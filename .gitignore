@@ -1,3 +1,5 @@
 *.pyc
 ignored-files/
 .idea/
+*.egg-info
+*.sublime-*
