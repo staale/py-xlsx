@@ -65,6 +65,9 @@ class Workbook(object):
         if modified_date_elements:
             self.dcterms_modified = modified_date_elements
 
+        self.styleSheet = self.domzip["xl/styles.xml"]
+        self.cellStyles = (self.styleSheet.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}cellXfs'))
+
         workbookDoc = self.domzip["xl/workbook.xml"]
         sheets = workbookDoc.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheets")
         id = 1
@@ -134,6 +137,10 @@ class Sheet(object):
                         stringIndex = columnNode[0].text
                         data = self.workbook.sharedStrings[int(stringIndex)]
                     #Date field
+                    elif cellS and int(self.workbook.cellStyles[int(cellS)].get('numFmtId')) in range(14,22+1):
+                        data = xldate_as_tuple(
+                            float(columnNode[0].text),
+                            datemode=0)
                     elif cellS in ('1', '2', '3', '4') and colType == "n":
                         data = xldate_as_tuple(
                             int(columnNode[0].text),
