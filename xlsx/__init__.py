@@ -183,7 +183,7 @@ class Sheet(object):
     def __getitem__(self, key):
         if not self.loaded:
             self.__load()
-        (column, row) = self.addrPattern.match(key).groups()
+        (column, row) = self.addrPattern.match(str(key)).groups()
         if column and row:
             if not key in self.__cells:
                 return None
@@ -191,7 +191,7 @@ class Sheet(object):
         if column:
             return self.__cols[key]
         if row:
-            return self.__rows[key]
+            return self.__rows[int(key)]
 
     def __iter__(self):
         if not self.loaded:
