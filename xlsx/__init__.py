@@ -102,6 +102,12 @@ class Workbook(object):
         else:
             return self.__sheetsByName[key]
 
+    def __contains__(self, key):
+        if isinstance(key, int):
+            return key in self.__sheetsById
+        else:
+            return key in self.__sheetsByName
+
 class SharedStrings(list):
 
     def __init__(self, sharedStringsDom):
