@@ -64,10 +64,19 @@ class WorkbookTestCase(unittest.TestCase):
                          u'エム セシビ め「こを バジョン')
 
     def test_dcterms_modified(self):
-        self.assertIs(self.workbooks['test1.xlsx'].dcterms_modified, None)
+        self.assertTrue(self.workbooks['test1.xlsx'].dcterms_modified is None)
         self.assertEqual(self.workbooks['modified_date.xlsx'].dcterms_modified,
                          u'2012-07-01T05:04:12Z')
 
+
+    def test_dates(self):
+        # tests out different date formats
+        workbook = self.workbooks['test_dates.xlsx']
+        self.assertEqual(workbook[1]['B1'].value, '1')
+        self.assertEqual(workbook[1]['B2'].value, (2012, 8, 13, 0, 0, 0))
+        self.assertEqual(workbook[1]['B3'].value, (1900, 3, 1, 0, 0, 0))
+        self.assertEqual(workbook[1]['B4'].value, (2200, 12, 31, 0, 0, 0))
+        self.assertEqual(workbook[1]['B5'].value, (2012, 8, 13, 12, 11, 0))
 
 if __name__ == '__main__':
     unittest.main()
