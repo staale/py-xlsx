@@ -3,3 +3,5 @@ ignored-files/
 .idea/
 *.egg-info
 *.sublime-*
+.pypirc
+dist/
