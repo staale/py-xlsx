@@ -108,6 +108,9 @@ class Workbook(object):
         else:
             return key in self.__sheetsByName
 
+    def __repr__(self):
+        return "Workbook(%s)" % self.filename
+
 class SharedStrings(list):
 
     def __init__(self, sharedStringsDom):
@@ -203,6 +206,9 @@ class Sheet(object):
         if not self.loaded:
             self.__load()
         return self.__cells.__iter__()
+
+    def __repr__(self):
+        return "%r[%r]"%(self.workbook, self.name)
 
 class Cell(object):
     def __init__(self, row, column, value, formula=None):
