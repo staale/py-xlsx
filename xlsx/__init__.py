@@ -22,6 +22,7 @@ class DomZip(object):
 
         """
 
+        self.ziphandle = None
         self.ziphandle = zipfile.ZipFile(filename, 'r')
 
     def __getitem__(self, key):
@@ -37,7 +38,8 @@ class DomZip(object):
     def __del__(self):
         """Close the zip file when finished"""
 
-        self.ziphandle.close()
+        if self.ziphandle:
+            self.ziphandle.close()
 
 class Workbook(object):
     """Main class that contains sheets organized by name or by id.
