@@ -1,44 +1,26 @@
-# -*- coding: cp1252 -*-
-
-##
-# <p>Copyright ? 2006-2008 Stephen John Machin, Lingfo Pty Ltd</p>
-# <p>This module is part of the xlrd package, which is released under a BSD-style licence.</p>
-##
-
-# timemachine.py -- adaptation for earlier Pythons e.g. 2.1
-# usage: from timemachine import *
-
-# 2008-02-08 SJM Generalised method of detecting IronPython
+# -*- coding: utf-8 -*-
+"""
+Compatibility shims for different Python versions.
+"""
 
 import sys
 
-python_version = sys.version_info[:2] # e.g. version 2.4 -> (2, 4)
-
-CAN_PICKLE_ARRAY = python_version >= (2, 5)
-CAN_SUBCLASS_BUILTIN = python_version >= (2, 2)
-
-if sys.version.find("IronPython") >= 0:
-    array_array = None
-else:
-    from array import array as array_array
-
-if python_version < (2, 2):
-    class object:
-        pass
-    False = 0
-    True = 1
 
 def int_floor_div(x, y):
     return divmod(x, y)[0]
 
-def intbool(x):
-    if x:
-        return 1
-    return 0
 
-if python_version < (2, 3):
-    def sum(sequence, start=0):
-        tot = start
-        for item in aseq:
-            tot += item
-        return tot
+class UnicodeMixin(object):
+    """
+    Mixin class to handle defining proper __str__/__unicode__ methods for
+    cross-compatibility with running on either Python 2 or 3.
+
+    Define a __unicode__ method that returns unicode on the target class, and
+    this mixin will add the proper __str__ method.
+    """
+    if sys.version_info[0] >= 3: # Python 3
+        def __str__(self):
+            return self.__unicode__()
+    else:  # Python 2
+        def __str__(self):
+            return self.__unicode__().encode('utf8')
