@@ -4,8 +4,15 @@ python-xlsx
 A small footprint xlsx reader that understands shared strings and can process
 excel dates.
 
+
+Requirements
+------------
+
+No external requirements.  Supports Python versions 2.6+ and 3.2+.
+
+
 Usage
-+++++++
+-----
 
 ::
 
@@ -21,6 +28,7 @@ Usage
 
     some_sheet = book['some sheet name']
     ...
+
 
 Alternatives
 ------------

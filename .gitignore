@@ -5,3 +5,4 @@ ignored-files/
 *.sublime-*
 .pypirc
 dist/
+.tox

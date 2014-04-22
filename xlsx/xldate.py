@@ -18,7 +18,7 @@
 #    Noon on Gregorian 1900-03-01 (day 61 in the 1900-based system) is JDN 2415080.0
 #    Noon on Gregorian 1904-01-02 (day  1 in the 1904-based system) is JDN 2416482.0
 
-from timemachine import int_floor_div as ifd
+from xlsx.timemachine import int_floor_div as ifd
 
 _JDN_delta = (2415080 - 61, 2416482 - 1)
 assert _JDN_delta[1] - _JDN_delta[0] == 1462
@@ -113,7 +113,8 @@ _days_in_month = (None, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 # @throws XLDateBadTuple (year, month, day) is too early/late or has invalid component(s)
 # @throws XLDateError Covers the specific errors
 
-def xldate_from_date_tuple((year, month, day), datemode):
+def xldate_from_date_tuple(year_month_day, datemode):
+    (year, month, day) = year_month_day
 
     if datemode not in (0, 1):
         raise XLDateBadDatemode(datemode)
@@ -152,7 +153,8 @@ def xldate_from_date_tuple((year, month, day), datemode):
 # @param second 0 <= second < 60
 # @throws XLDateBadTuple Out-of-range hour, minute, or second
 
-def xldate_from_time_tuple((hour, minute, second)):
+def xldate_from_time_tuple(hour_minute_second):
+    (hour, minute, second) = hour_minute_second
     if 0 <= hour < 24 and 0 <= minute < 60 and 0 <= second < 60:
         return ((second / 60.0 + minute) / 60.0 + hour) / 24.0
     raise XLDateBadTuple("Invalid (hour, minute, second): %r" % ((hour, minute, second),))

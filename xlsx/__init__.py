@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 """ Small footprint xlsx reader """
+
+from __future__ import unicode_literals
+
 __author__="Ståle Undheim <staale@staale.org>"
 
 import re
 import zipfile
-from xldate import xldate_as_tuple
-from formatting import is_date_format_string
+from xlsx.xldate import xldate_as_tuple
+from xlsx.formatting import is_date_format_string
+from xlsx.timemachine import UnicodeMixin
 
 try:
     from xml.etree import cElementTree as ET
@@ -206,7 +210,9 @@ class Sheet(object):
             self.__load()
         return self.__cells.__iter__()
 
-class Cell(object):
+
+class Cell(UnicodeMixin):
+
     def __init__(self, row, column, value, formula=None):
         self.row = int(row)
         self.column = column
@@ -244,5 +250,5 @@ class Cell(object):
         return self.__cmp__(other) != -1
 
     def __unicode__(self):
-        return u"<Cell [%s] : \"%s\" (%s)>" % (self.id, self.value,
-                                               self.formula, )
+        return "<Cell [%s] : \"%s\" (%s)>" % (self.id, self.value,
+                                              self.formula, )
