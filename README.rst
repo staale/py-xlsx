@@ -32,8 +32,6 @@ Usage
     ...
 
 
-
-
 Alternatives
 ------------
 
