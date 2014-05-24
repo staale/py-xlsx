@@ -130,17 +130,16 @@ class Sheet(object):
         self.loaded = False
         self.addrPattern = re.compile("([a-zA-Z]*)(\d*)")
         self.__cells = {}
-        self.__cols = {}
-        self.__rows = {}
+        self.__cols = None
+        self.__rows = None
 
-    def __load(self):
+    def rowsIter(self):
         sheetDoc = self.workbook.domzip["xl/worksheets/sheet%d.xml" % self.id]
         sheetData = sheetDoc.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheetData")
         # @type sheetData Element
-        rows = {}
-        columns = {}
         for rowNode in sheetData:
             rowNum = int(rowNode.get("r"))
+            rowCells = []
             for columnNode in rowNode:
                 colType = columnNode.get("t")
                 cellId = columnNode.get("r")
@@ -170,14 +169,22 @@ class Sheet(object):
                         formula = columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}f").text
                 except Exception:
                     raise #pass
-                if not rowNum in rows:
-                    rows[rowNum] = []
+                cell = Cell(rowNum, colNum, data, formula=formula)
+                rowCells.append(cell)
+            yield rowNum, rowCells
+
+    def __load(self):
+        rows = {}
+        columns = {}
+        for rowNum, row in self.rowsIter():
+            rows[rowNum] = row
+
+            for cell in row:
+                colNum = cell.column
                 if not colNum in columns:
                     columns[colNum] = []
-                cell = Cell(rowNum, colNum, data, formula=formula)
-                rows[rowNum].append(cell)
+                self.__cells[cell.id] = cell
                 columns[colNum].append(cell)
-                self.__cells[cellId] = cell
         self.__rows = rows
         self.__cols = columns
         self.loaded=True

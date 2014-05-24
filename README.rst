@@ -19,6 +19,8 @@ Usage
     book = Workbook('filename or filedescriptor') #Open xlsx file
     for sheet in book:
         print sheet.name
+        # for larger workbooks, use sheet.rowsIter() instead of
+        # sheet.rows().iteritems()
         for row, cells in sheet.rows().iteritems(): # or sheet.cols()
             print row # prints row number
             for cell in cells:
@@ -28,6 +30,8 @@ Usage
 
     some_sheet = book['some sheet name']
     ...
+
+
 
 
 Alternatives
