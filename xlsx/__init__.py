@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 """ Small footprint xlsx reader """
+
+from __future__ import unicode_literals
+
 __author__="Ståle Undheim <staale@staale.org>"
 
 import re
 import zipfile
-from xldate import xldate_as_tuple
-from formatting import is_date_format_string
+from xlsx.xldate import xldate_as_tuple
+from xlsx.formatting import is_date_format_string
+from xlsx.timemachine import UnicodeMixin
 
 try:
     from xml.etree import cElementTree as ET
@@ -26,6 +30,7 @@ class DomZip(object):
 
         """
 
+        self.ziphandle = None
         self.ziphandle = zipfile.ZipFile(filename, 'r')
 
     def __getitem__(self, key):
@@ -41,7 +46,8 @@ class DomZip(object):
     def __del__(self):
         """Close the zip file when finished"""
 
-        self.ziphandle.close()
+        if self.ziphandle:
+            self.ziphandle.close()
 
 class Workbook(object):
     """Main class that contains sheets organized by name or by id.
@@ -127,17 +133,16 @@ class Sheet(object):
         self.loaded = False
         self.addrPattern = re.compile("([a-zA-Z]*)(\d*)")
         self.__cells = {}
-        self.__cols = {}
-        self.__rows = {}
+        self.__cols = None
+        self.__rows = None
 
-    def __load(self):
+    def rowsIter(self):
         sheetDoc = self.workbook.domzip["xl/worksheets/sheet%d.xml" % self.id]
         sheetData = sheetDoc.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheetData")
         # @type sheetData Element
-        rows = {}
-        columns = {}
         for rowNode in sheetData:
             rowNum = int(rowNode.get("r"))
+            rowCells = []
             for columnNode in rowNode:
                 colType = columnNode.get("t")
                 cellId = columnNode.get("r")
@@ -167,14 +172,22 @@ class Sheet(object):
                         formula = columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}f").text
                 except Exception:
                     raise #pass
-                if not rowNum in rows:
-                    rows[rowNum] = []
+                cell = Cell(rowNum, colNum, data, formula=formula)
+                rowCells.append(cell)
+            yield rowNum, rowCells
+
+    def __load(self):
+        rows = {}
+        columns = {}
+        for rowNum, row in self.rowsIter():
+            rows[rowNum] = row
+
+            for cell in row:
+                colNum = cell.column
                 if not colNum in columns:
                     columns[colNum] = []
-                cell = Cell(rowNum, colNum, data, formula=formula)
-                rows[rowNum].append(cell)
+                self.__cells[cell.id] = cell
                 columns[colNum].append(cell)
-                self.__cells[cellId] = cell
         self.__rows = rows
         self.__cols = columns
         self.loaded=True
@@ -207,10 +220,16 @@ class Sheet(object):
             self.__load()
         return self.__cells.__iter__()
 
+<<<<<<< HEAD
     def __repr__(self):
         return "%r[%r]"%(self.workbook, self.name)
 
 class Cell(object):
+=======
+
+class Cell(UnicodeMixin):
+
+>>>>>>> 5fa8fa8761d3bfcb3ce1b1b730913f6d4d0ab0c9
     def __init__(self, row, column, value, formula=None):
         self.row = int(row)
         self.column = column
@@ -248,5 +267,5 @@ class Cell(object):
         return self.__cmp__(other) != -1
 
     def __unicode__(self):
-        return u"<Cell [%s] : \"%s\" (%s)>" % (self.id, self.value,
-                                               self.formula, )
+        return "<Cell [%s] : \"%s\" (%s)>" % (self.id, self.value,
+                                              self.formula, )
