@@ -164,9 +164,13 @@ class Sheet(object):
                                 datemode=0)
                         elif len(columnNode)>0 and columnNode[0] is not None:
                             data = columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v").text
+                    elif columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}is") is not None:
+                        if colType == "inlineStr":
+                            data = columnNode[0][0].text
 
                     if columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}f") is not None:
                         formula = columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}f").text
+
                 except Exception:
                     raise #pass
                 cell = Cell(rowNum, colNum, data, formula=formula)
