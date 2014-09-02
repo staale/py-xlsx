@@ -118,8 +118,24 @@ class SharedStrings(list):
 
     def __init__(self, sharedStringsDom):
         nodes = [x for x in sharedStringsDom]
-        for text in [n[0] for n in nodes]:
-            self.append(text.text)
+        self.extend([self._convertText(node) for node in nodes])
+
+    @staticmethod
+    def _convertText(siNode):
+        '''
+        Convert 'SharedStringItem' node to text.
+
+        Not only simple text node, also `RichTextRun` nodes.
+        See http://msdn.microsoft.com/en-us/library/office/gg278314(v=office.15).aspx.
+        '''
+        firstNode = siNode[0]
+        if firstNode.tag == '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t':
+            return firstNode.text
+        elif firstNode.tag == '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}r':
+            # RichTextRun
+            text = ''.join([tNode.text or '' for tNode in siNode.iter('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t')])
+            return text or None
+        raise Exception('Unknow tag.', firstNode.tag)
 
 class Sheet(object):
 
