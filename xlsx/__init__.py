@@ -164,21 +164,24 @@ class Sheet(object):
                 formula = None
                 data = ''
                 try:
-                    if columnNode.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v') is not None:
+                    if len(columnNode)>0 and columnNode[0] is not None and columnNode.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v') is not None:
                         if colType == "s":
                             stringIndex = columnNode[0].text
                             data = self.workbook.sharedStrings[int(stringIndex)]
                         #Built in date-formatted fields
-                        elif cellS and int(self.workbook.cellStyles[int(cellS)].get('numFmtId')) in range(14, 22+1):
-                            data = xldate_as_tuple(
-                                float(columnNode[0].text),
-                                datemode=0)
-                        elif cellS and (self.workbook.cellStyles[int(cellS)].get('numFmtId') in self.workbook.numFmts) \
-                            and is_date_format_string(self.workbook.numFmts[self.workbook.cellStyles[int(cellS)].get('numFmtId')]):
-                            data = xldate_as_tuple(
-                                float(columnNode[0].text),
-                                datemode=0)
-                        elif len(columnNode)>0 and columnNode[0] is not None:
+                        elif cellS and re.match("^[\d\.]+$", columnNode[0].text):
+                            if int(self.workbook.cellStyles[int(cellS)].get('numFmtId')) in range(14, 22+1):
+                                data = xldate_as_tuple(
+                                    float(columnNode[0].text),
+                                    datemode=0)
+                            elif (self.workbook.cellStyles[int(cellS)].get('numFmtId') in self.workbook.numFmts) \
+                                and is_date_format_string(self.workbook.numFmts[self.workbook.cellStyles[int(cellS)].get('numFmtId')]):
+                                data = xldate_as_tuple(
+                                    float(columnNode[0].text),
+                                    datemode=0)
+                            else:
+                                data = columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v").text
+                        else:
                             data = columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}v").text
                     elif columnNode.find("{http://schemas.openxmlformats.org/spreadsheetml/2006/main}is") is not None:
                         if colType == "inlineStr":
